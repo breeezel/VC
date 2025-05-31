@@ -1,0 +1,2 @@
+wav_path,speaker_id,speaker_name
+/app/VoiceClonerPy/data/pipeline_test_processed/speaker_female/segment_2.wav,1,female_test
