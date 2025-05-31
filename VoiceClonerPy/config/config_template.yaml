@@ -1,6 +1,8 @@
 # VoiceClonerPy Configuration Template
 project:
-  name: "VoiceClonerPy_Experiment_1"; version: "0.1.0"; experiment_name: "base_model_run_01"
+  name: "VoiceClonerPy_Experiment_1"
+  version: "0.1.0"
+  experiment_name: "base_model_run_01"
 data:
   base_model_corpus_dir: "data/VCTK-Corpus/wav48_silence_trimmed/"
   fine_tune_user_data_dir: "data/user_audio_samples/"
@@ -14,31 +16,57 @@ data:
   fmin: 0                  # Минимальная частота для мел-фильтров
   fmax: 8000               # Максимальная частота (может быть sample_rate / 2)
   power_to_db: True
-  trim_silence: True; trim_top_db: 60
-  batch_size: 16; num_workers: 4; pin_memory: True; segment_length_sec: 2
+  trim_silence: True
+  trim_top_db: 60
+  batch_size: 16
+  num_workers: 4
+  pin_memory: True
+  segment_length_sec: 2
 model:
-  type: "StarGANVC"; num_speakers: 109; speaker_embedding_dim: 256
+  type: "StarGANVC"
+  num_speakers: 109
+  speaker_embedding_dim: 256
   generator: {mel_channels: 80, hidden_channels: 512, bottleneck_channels: 256, num_downsample_blocks: 2, num_residual_blocks: 6, num_upsample_blocks: 2}
-  discriminator: {mel_channels: 80, hidden_channels: 256, num_conv_blocks: 4, downsample_every_n_convs: 1}
+  discriminator: {mel_channels: 80, hidden_channels: 256, num_conv_blocks: 4, downsample_every_n: 1}
   vocoder: {type: "HiFiGAN", checkpoint_path: "models/vocoder_checkpoints/hifigan_g_02500000", config_path: "models/vocoder_checkpoints/hifigan_config.json"}
 training:
-  mode: "train"; num_epochs: 1000; learning_rate_g: 0.0002; learning_rate_d: 0.0001
-  optimizer_betas: [0.5, 0.999]; checkpoint_dir: "checkpoints/"; log_file_path: "logs/training.log"
-  log_interval: 100; save_epoch_interval: 10; resume_from_epoch: 0
-  lambda_g_adv: 1.0; lambda_g_cls: 1.0; lambda_identity: 5.0; lambda_reconstruction: 10.0
-  lambda_d_adv: 1.0; lambda_d_cls: 1.0
-  device: "cuda"; batch_size_val: 4
+  mode: "train"
+  num_epochs: 1000
+  learning_rate_g: 0.0002
+  learning_rate_d: 0.0001
+  optimizer_betas: [0.5, 0.999]
+  checkpoint_dir: "checkpoints/"
+  log_file_path: "logs/training.log"
+  log_interval: 100
+  save_epoch_interval: 10
+  resume_from_epoch: 0
+  lambda_g_adv: 1.0
+  lambda_g_cls: 1.0
+  lambda_identity: 5.0
+  lambda_reconstruction: 10.0
+  lambda_d_adv: 1.0
+  lambda_d_cls: 1.0
+  device: "cuda"
+  batch_size_val: 4
 fine_tuning:
   base_model_checkpoint_path: "checkpoints/base_model_run_01/generator_epoch_500.pth"
-  num_epochs: 200; learning_rate_g: 0.00005; learning_rate_d: 0.00002
-  train_generator: True; train_discriminator: False
-  lambda_identity_ft: 10.0; lambda_reconstruction_ft: 20.0
+  num_epochs: 200
+  learning_rate_g: 0.00005
+  learning_rate_d: 0.00002
+  train_generator: True
+  train_discriminator: False
+  lambda_identity_ft: 10.0
+  lambda_reconstruction_ft: 20.0
 inference_file:
-  input_wav_path: "input_audio/source.wav"; output_wav_path: "output_audio/converted.wav"
-  conversion_direction: "specific"; fine_tuned_model_path_female_generator: "checkpoints/ft_female_exp/model_best_generator.pth"
+  input_wav_path: "input_audio/source.wav"
+  output_wav_path: "output_audio/converted.wav"
+  conversion_direction: "specific"
+  fine_tuned_model_path_female_generator: "checkpoints/ft_female_exp/model_best_generator.pth"
   fine_tuned_model_path_male_generator: "checkpoints/ft_male_exp/model_best_generator.pth"
   specific_generator_checkpoint_path: "checkpoints/base_model_run_01/model_best_mcd_generator.pth"
-  specific_target_speaker_id: 0; target_female_speaker_id: 0; target_male_speaker_id: 1
+  specific_target_speaker_id: 0
+  target_female_speaker_id: 0
+  target_male_speaker_id: 1
 inference_realtime:
   input_device_index: -1
   output_device_index: -1
@@ -55,6 +83,7 @@ inference_realtime:
   target_male_speaker_id: 1
   specific_target_speaker_id: 0
 evaluation:
-  primary_metric: "mcd"; dtw_enabled: true
+  primary_metric: "mcd"
+  dtw_enabled: true
   mfcc_params: {n_mfcc: 24, n_fft: 1024, hop_length: 256, win_length: 1024}
   f0_params: {fmin_hz: 60, fmax_hz: 750, hop_length: 256}
