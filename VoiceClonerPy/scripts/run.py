@@ -8,13 +8,13 @@ import yaml
 import csv # Для чтения CSV в load_data_for_dataset
 
 # Импорт модулей проекта
-from src.utils.config_loader import load_config
-from src.training.trainer import Trainer
-from src.models.stargan_vc import Generator, Discriminator
-from src.data_loader import VoiceDataset, DataLoader # prepare_base_model_data убрано, т.к. load_data_for_dataset его заменяет
-from src.inference import convert_voice_from_file
-from src.realtime_audio_utils import list_audio_devices, select_device_id
-from src.realtime_inference import RealTimeVoiceConverter
+from VoiceClonerPy.src.utils.config_loader import load_config
+from VoiceClonerPy.src.training.trainer import Trainer
+from VoiceClonerPy.src.models.stargan_vc import Generator, Discriminator
+from VoiceClonerPy.src.data_loader import VoiceDataset, DataLoader # prepare_base_model_data убрано, т.к. load_data_for_dataset его заменяет
+from VoiceClonerPy.src.inference import convert_voice_from_file
+from VoiceClonerPy.src.realtime_audio_utils import list_audio_devices, select_device_id
+from VoiceClonerPy.src.realtime_inference import RealTimeVoiceConverter
 
 logger = logging.getLogger("VoiceClonerPy_RunScript")
 logger.setLevel(logging.INFO)
