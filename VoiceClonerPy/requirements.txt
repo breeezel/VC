@@ -1,0 +1,8 @@
+librosa
+soundfile
+torch
+torchaudio
+numpy
+PyYAML
+sounddevice
+noisereduce
