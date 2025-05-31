@@ -49,30 +49,63 @@ def load_data_for_dataset(data_root_path, metadata_file_path, num_expected_speak
     try:
         with open(metadata_file_path, 'r', encoding='utf-8') as f:
             reader = csv.DictReader(f)
-            if not reader.fieldnames or not all(col in reader.fieldnames for col in ['wav_path', 'speaker_id']):
-                logger.error(f"Необходимые колонки 'wav_path', 'speaker_id' отсутствуют в {metadata_file_path}. Выход.")
-                # В реальном приложении здесь может быть sys.exit(1) или raise Error
-                return [] # Возвращаем пустой список при ошибке
 
-            for row in reader:
-                wav_path = row['wav_path']
-                # Если путь в CSV относительный, он должен быть относительно data_root_path
-                # Для данного теста предполагаем, что run_pipeline_test.py создаст абсолютные пути или пути относительно корня проекта.
-                if data_root_path and not os.path.isabs(wav_path): # Это условие может потребовать доработки в зависимости от структуры CSV
-                    wav_path = os.path.join(data_root_path, wav_path)
+            expected_columns = []
+            if is_validation:
+                expected_columns = ['source_audio_path', 'target_original_audio_path', 'source_speaker_id', 'target_speaker_id_for_conversion']
+            else:
+                expected_columns = ['wav_path', 'speaker_id']
 
-                try:
-                    speaker_id = int(row['speaker_id'])
-                    speaker_ids_found.add(speaker_id)
-                except ValueError:
-                    logger.warning(f"Неверный speaker_id '{row['speaker_id']}' для файла {wav_path} в {metadata_file_path}. Пропуск.")
-                    continue
+            if not reader.fieldnames or not all(col in reader.fieldnames for col in expected_columns):
+                logger.error(f"Необходимые колонки {expected_columns} отсутствуют в {metadata_file_path}. Выход.")
+                return []
 
-                # Для этого упрощенного теста VoiceDataset ожидает (wav_path, speaker_id_int)
-                data_entries.append((wav_path, speaker_id))
+            for row_idx, row in enumerate(reader):
+                if is_validation:
+                    try:
+                        source_audio_path = row['source_audio_path']
+                        target_original_audio_path = row['target_original_audio_path']
+                        source_speaker_id_str = row['source_speaker_id']
+                        target_speaker_id_for_conversion_str = row['target_speaker_id_for_conversion']
+
+                        if data_root_path:
+                            if not os.path.isabs(source_audio_path):
+                                source_audio_path = os.path.join(data_root_path, source_audio_path)
+                            if not os.path.isabs(target_original_audio_path):
+                                target_original_audio_path = os.path.join(data_root_path, target_original_audio_path)
+
+                        source_speaker_id = int(source_speaker_id_str)
+                        target_speaker_id_for_conversion = int(target_speaker_id_for_conversion_str)
+
+                        speaker_ids_found.add(source_speaker_id)
+                        # speaker_ids_found.add(target_speaker_id_for_conversion) # Целевой ID для конверсии может не быть в списке обучающих дикторов
+
+                        data_entries.append((source_audio_path, target_original_audio_path, source_speaker_id, target_speaker_id_for_conversion))
+
+                    except KeyError as ke:
+                        logger.warning(f"Отсутствует ожидаемая колонка {ke} в строке {row_idx + 1} файла {metadata_file_path}. Пропуск строки.")
+                        continue
+                    except ValueError as ve:
+                        logger.warning(f"Ошибка конвертации ID диктора в число в строке {row_idx + 1} ({source_speaker_id_str=}, {target_speaker_id_for_conversion_str=}) файла {metadata_file_path}: {ve}. Пропуск строки.")
+                        continue
+                else: # Original logic for training data
+                    try:
+                        wav_path = row['wav_path']
+                        if data_root_path and not os.path.isabs(wav_path):
+                            wav_path = os.path.join(data_root_path, wav_path)
+
+                        speaker_id = int(row['speaker_id'])
+                        speaker_ids_found.add(speaker_id)
+                        data_entries.append((wav_path, speaker_id))
+                    except KeyError as ke:
+                        logger.warning(f"Отсутствует ожидаемая колонка {ke} в строке {row_idx + 1} файла {metadata_file_path} (для is_validation=False). Пропуск строки.")
+                        continue
+                    except ValueError:
+                        logger.warning(f"Неверный speaker_id '{row.get('speaker_id', 'N/A')}' для файла {row.get('wav_path', 'N/A')} в {metadata_file_path}. Пропуск строки {row_idx + 1}.")
+                        continue
 
         logger.info(f"Загружено {len(data_entries)} записей для набора '{dataset_type}'. Найдено уникальных ID дикторов: {len(speaker_ids_found)} (Макс ID: {max(speaker_ids_found) if speaker_ids_found else 'N/A'}).")
-        if num_expected_speakers and max(speaker_ids_found if speaker_ids_found else [-1]) >= num_expected_speakers:
+        if num_expected_speakers and speaker_ids_found and max(speaker_ids_found) >= num_expected_speakers: # Check speaker_ids_found is not empty
              logger.warning(f"Максимальный ID диктора ({max(speaker_ids_found)}) >= num_speakers ({num_expected_speakers}) из конфига. Это может вызвать ошибку Embedding слоя.")
 
     except Exception as e:
