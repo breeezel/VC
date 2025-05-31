@@ -5,12 +5,11 @@ import numpy as np
 import torch
 from torch.utils.data import Dataset, DataLoader
 from .audio_utils import wav_to_mel_spectrogram
-import logging # Для логгирования в этом модуле
+import logging
 
 logger = logging.getLogger(__name__)
 
 def load_wav(file_path, sample_rate=None):
-    # Загружает WAV файл.
     if not os.path.exists(file_path):
         logger.error(f"Файл не найден: {file_path}")
         return None, None
@@ -22,7 +21,6 @@ def load_wav(file_path, sample_rate=None):
         return None, None
 
 def save_wav(file_path, audio_data, sample_rate):
-    # Сохраняет аудиоданные в WAV файл.
     try:
         sf.write(file_path, audio_data, sample_rate)
         return True
@@ -30,54 +28,31 @@ def save_wav(file_path, audio_data, sample_rate):
         logger.error(f"Ошибка сохранения WAV файла {file_path}: {e}")
         return False
 
+# Функции prepare_fine_tune_data и prepare_base_model_data остаются, но могут быть заменены на load_data_for_dataset
 def prepare_fine_tune_data(user_data_dir):
-    # Подготовка данных для fine-tuning (пока просто список WAV файлов).
-    if not os.path.isdir(user_data_dir):
-        logger.error(f"Директория не найдена: {user_data_dir}")
-        return []
+    if not os.path.isdir(user_data_dir): logger.error(f"Директория не найдена: {user_data_dir}"); return []
     try:
         wav_files = [os.path.join(user_data_dir, f) for f in os.listdir(user_data_dir) if f.lower().endswith('.wav')]
         logger.info(f"Найдено {len(wav_files)} WAV файлов в {user_data_dir} для fine-tuning.")
         return wav_files
-    except Exception as e:
-        logger.error(f"Ошибка доступа к директории {user_data_dir}: {e}")
-        return []
+    except Exception as e: logger.error(f"Ошибка доступа к {user_data_dir}: {e}"); return []
 
 def prepare_base_model_data(corpus_dir):
-    # Подготовка данных для базовой модели (пока просто список WAV файлов).
-    # В реальной реализации здесь может быть более сложная логика, включая метаданные.
-    if not os.path.isdir(corpus_dir):
-        logger.error(f"Директория корпуса не найдена: {corpus_dir}")
-        return []
+    if not os.path.isdir(corpus_dir): logger.error(f"Директория корпуса не найдена: {corpus_dir}"); return []
     try:
-        # Эта функция должна возвращать список путей к файлам, а не просто имена файлов
-        audio_files = [os.path.join(corpus_dir, f) for f in os.listdir(corpus_dir) if f.lower().endswith(('.wav', '.flac', '.mp3'))] # Пример с разными форматами
+        audio_files = [os.path.join(corpus_dir, f) for f in os.listdir(corpus_dir) if f.lower().endswith(('.wav', '.flac', '.mp3'))]
         logger.info(f"Найдено {len(audio_files)} аудиофайлов в {corpus_dir}.")
         return audio_files
-    except Exception as e:
-        logger.error(f"Ошибка доступа к директории корпуса {corpus_dir}: {e}")
-        return []
+    except Exception as e: logger.error(f"Ошибка доступа к {corpus_dir}: {e}"); return []
 
-# Добавлено в предыдущем шаге, используется в scripts/run.py
-def load_data_for_dataset(data_dir_or_file_list, metadata_file, num_speakers_from_model, is_validation=False):
-    # Плейсхолдер: Эта функция должна парсить metadata_file или сканировать data_dir_or_file_list
-    # для создания списка кортежей: [(audio_path, speaker_id)] для обучения,
-    # или [(src_path, target_path, src_id, target_id)] для валидации.
-    # Пока возвращает заглушечные данные.
-    logger.warning(f"Загрузка данных для {'валидации' if is_validation else 'обучения'} использует ЗАГЛУШЕЧНЫЕ данные. Реализуйте реальную загрузку данных.")
-    num_dummy = 20 if is_validation else 100
-
-    if is_validation: # Ожидаемая структура: (source_mel_audio_path, target_eval_audio_path, source_speaker_id, target_speaker_id_for_conversion)
-        return [(f"dummy_val_src_{i}.wav", f"dummy_val_trg_{i}.wav", i % num_speakers_from_model, (i+1) % num_speakers_from_model) for i in range(num_dummy)]
-    else: # Ожидаемая структура: (audio_path, speaker_id)
-        return [(f"dummy_train_{i}.wav", i % num_speakers_from_model) for i in range(num_dummy)]
-
+# Эта функция теперь в scripts/run.py, но может быть и здесь, если импортировать csv
+# def load_data_for_dataset(...): ...
 
 class VoiceDataset(Dataset):
-    def __init__(self, data_entries, data_config, is_validation=False):
-        # data_entries: список кортежей, структура зависит от is_validation
-        # Для обучения: [(wav_path1, speaker_id1), ...]
-        # Для валидации: [(source_mel_audio_path, target_eval_audio_path, source_speaker_id, target_speaker_id_for_conversion), ...]
+    def __init__(self, data_config, data_entries, is_validation=False):
+        # data_entries: список кортежей [(wav_path1, speaker_id1), ...]
+        # Для валидации, если is_validation=True, data_entries может содержать
+        # (source_wav_path, target_original_wav_path, source_speaker_id, target_conversion_speaker_id)
         self.data_entries = data_entries
         self.data_config = data_config
         self.is_validation = is_validation
@@ -95,30 +70,43 @@ class VoiceDataset(Dataset):
         entry = self.data_entries[idx]
 
         if self.is_validation:
-            # Запись для валидации: (source_mel_audio_path, target_eval_audio_path, source_speaker_id, target_speaker_id_for_conversion)
-            source_audio_path, target_eval_audio_path, source_speaker_id, target_speaker_id_for_conversion = entry
+            # Ожидаемая структура entry для валидации:
+            # (source_audio_path, target_original_audio_path, source_speaker_id, target_speaker_id_for_conversion)
+            # source_audio_path: аудио для извлечения мел-спектрограммы (вход генератора)
+            # target_original_audio_path: путь к оригинальному WAV файлу целевого диктора (для объективной оценки)
+            # source_speaker_id: ID исходного диктора (не используется в текущей логике Trainer.evaluate_epoch, но может быть полезен)
+            # target_speaker_id_for_conversion: ID целевого диктора для генератора
+            source_audio_path, target_original_audio_path, source_speaker_id, target_speaker_id_for_conversion = entry
 
-            source_audio_data, _ = load_wav(source_audio_path, sample_rate=self.sample_rate)
-            if source_audio_data is None:
-                logger.warning(f"Ошибка загрузки исходного аудио для валидации: {source_audio_path}. Возвращаем заглушку.")
-                # Возвращаем заглушки, соответствующие ожидаемой структуре Trainer.evaluate_epoch
-                return torch.zeros((self.n_mels, 128)), torch.tensor(source_speaker_id, dtype=torch.long), \
-                       torch.tensor(target_speaker_id_for_conversion, dtype=torch.long), "dummy_path_error.wav"
-
-            source_mel_np = wav_to_mel_spectrogram(source_audio_data, self.sample_rate, n_fft=self.n_fft, hop_length=self.hop_length,
-                                                   n_mels=self.n_mels, fmin=self.fmin, fmax=self.fmax, power_to_db=self.power_to_db)
-            source_mel_tensor = torch.from_numpy(source_mel_np).float()
-
-            return source_mel_tensor, torch.tensor(source_speaker_id, dtype=torch.long), \
-                   torch.tensor(target_speaker_id_for_conversion, dtype=torch.long), target_eval_audio_path
+            audio_to_process_for_mel = source_audio_path # Аудио, из которого делаем мел для входа в генератор
         else: # Режим обучения
-            audio_path, speaker_id = entry
-            audio_data, _ = load_wav(audio_path, sample_rate=self.sample_rate)
-            if audio_data is None:
-                logger.warning(f"Ошибка загрузки аудио для обучения: {audio_path}. Возвращаем заглушку.")
-                return torch.zeros((self.n_mels, 128)), torch.tensor(speaker_id, dtype=torch.long)
+            # Ожидаемая структура entry для обучения: (audio_path, speaker_id)
+            audio_to_process_for_mel, speaker_id = entry
+            # В режиме обучения target_original_audio_path не нужен напрямую для Trainer,
+            # но если бы мы хотели его вернуть, он был бы равен audio_path.
 
-            mel_spectrogram_np = wav_to_mel_spectrogram(audio_data, self.sample_rate, n_fft=self.n_fft, hop_length=self.hop_length,
-                                                        n_mels=self.n_mels, fmin=self.fmin, fmax=self.fmax, power_to_db=self.power_to_db)
-            mel_tensor = torch.from_numpy(mel_spectrogram_np).float()
+        # Загрузка и обработка аудио для мел-спектрограммы
+        audio_data, _ = load_wav(audio_to_process_for_mel, sample_rate=self.sample_rate)
+        if audio_data is None:
+            err_msg = f"Ошибка загрузки аудио: {audio_to_process_for_mel}. Возвращаем заглушку."
+            logger.warning(err_msg)
+            dummy_mel = torch.zeros((self.n_mels, 128)) # Форма заглушки
+            if self.is_validation:
+                # source_mel, source_id, target_id_for_conversion, original_wav_path_for_eval
+                return dummy_mel, torch.tensor(0, dtype=torch.long), torch.tensor(0, dtype=torch.long), "error_path.wav"
+            else:
+                return dummy_mel, torch.tensor(0, dtype=torch.long)
+
+        mel_spectrogram_np = wav_to_mel_spectrogram(audio_data, self.sample_rate, n_fft=self.n_fft, hop_length=self.hop_length,
+                                                   n_mels=self.n_mels, fmin=self.fmin, fmax=self.fmax, power_to_db=self.power_to_db)
+        mel_tensor = torch.from_numpy(mel_spectrogram_np).float()
+
+        if self.is_validation:
+            # Возвращаем: source_mel_tensor, source_speaker_id, target_speaker_id_for_conversion, target_original_audio_path
+            # Trainer.evaluate_epoch использует source_mel_tensor и target_speaker_id_for_conversion для генератора,
+            # и target_original_audio_path для загрузки эталонного аудио для метрик.
+            return mel_tensor, torch.tensor(source_speaker_id, dtype=torch.long), \
+                   torch.tensor(target_speaker_id_for_conversion, dtype=torch.long), target_original_audio_path
+        else: # Режим обучения
+            # Возвращаем: mel_tensor, speaker_id (этот speaker_id будет и source, и target для некоторых потерь в StarGAN-VC)
             return mel_tensor, torch.tensor(speaker_id, dtype=torch.long)
