@@ -58,7 +58,7 @@ fine_tuning:
   lambda_identity_ft: 10.0
   lambda_reconstruction_ft: 20.0
 inference_file:
-  input_wav_path: "input_audio/source.wav"
+  input_wav_path: "male.wav"
   output_wav_path: "output_audio/converted.wav"
   conversion_direction: "specific"
   fine_tuned_model_path_female_generator: "checkpoints/ft_female_exp/model_best_generator.pth"
