@@ -213,7 +213,14 @@ def run_main_script(config_path, mode="train"):
     command = [sys.executable, main_script_path, '--config', config_path, '--mode', mode]
     print(f"Запуск команды: {' '.join(command)}")
     try:
-        process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding='utf-8', cwd=BASE_DIR)
+        # Модификация для PYTHONPATH
+        env = os.environ.copy()
+        # BASE_DIR is /app/VoiceClonerPy. The actual project root containing VoiceClonerPy is /app.
+        project_root = os.path.dirname(BASE_DIR) # This should be /app
+        env['PYTHONPATH'] = project_root + os.pathsep + env.get('PYTHONPATH', '')
+
+        # The cwd for the subprocess should also be the project_root for consistent import behavior
+        process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding='utf-8', cwd=project_root, env=env)
         for line in process.stdout: print(line, end='')
         process.wait()
         if process.returncode != 0: print(f"Ошибка выполнения команды! Код возврата: {process.returncode}"); return False

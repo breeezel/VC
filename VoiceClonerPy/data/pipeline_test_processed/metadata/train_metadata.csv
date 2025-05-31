@@ -1,4 +1,4 @@
 wav_path,speaker_id,speaker_name
-C:\Users\korol\PycharmProjects\VC\VoiceClonerPy\data\pipeline_test_processed\speaker_male\segment_2.wav,0,male_test
-C:\Users\korol\PycharmProjects\VC\VoiceClonerPy\data\pipeline_test_processed\speaker_female\segment_1.wav,1,female_test
-C:\Users\korol\PycharmProjects\VC\VoiceClonerPy\data\pipeline_test_processed\speaker_female\segment_2.wav,1,female_test
+/app/VoiceClonerPy/data/pipeline_test_processed/speaker_male/segment_1.wav,0,male_test
+/app/VoiceClonerPy/data/pipeline_test_processed/speaker_female/segment_1.wav,1,female_test
+/app/VoiceClonerPy/data/pipeline_test_processed/speaker_female/segment_2.wav,1,female_test
