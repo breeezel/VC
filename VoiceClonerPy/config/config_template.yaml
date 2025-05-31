@@ -4,14 +4,18 @@ project:
 data:
   base_model_corpus_dir: "data/VCTK-Corpus/wav48_silence_trimmed/"
   fine_tune_user_data_dir: "data/user_audio_samples/"
-  val_data_dir: "data/val_dataset_wavs/" # Path to validation audio files
-  val_metadata_file: "data/val_metadata.csv" # Example: csv with format: source_wav_path,target_wav_path,source_spk_id,target_spk_id
-  sample_rate: 22050; n_fft: 1024; hop_length: 256; win_length: 1024; n_mels: 80
-  fmin: 0; fmax: 8000; power_to_db: True; trim_silence: True; trim_top_db: 60
+  val_data_dir: "data/val_dataset_wavs/"
+  val_metadata_file: "data/val_metadata.csv"
+  sample_rate: 22050       # Частота дискретизации
+  n_fft: 1024              # Размер окна БПФ
+  hop_length: 256          # Шаг окна (сдвиг)
+  win_length: 1024         # Длина окна (может быть равна n_fft)
+  n_mels: 80               # Количество мел-фильтров
+  fmin: 0                  # Минимальная частота для мел-фильтров
+  fmax: 8000               # Максимальная частота (может быть sample_rate / 2)
+  power_to_db: True
+  trim_silence: True; trim_top_db: 60
   batch_size: 16; num_workers: 4; pin_memory: True; segment_length_sec: 2
-  # dummy_samples_train: 100 # For run.py testing
-  # dummy_samples_val: 20   # For run.py testing
-  # dummy_samples_ft: 20    # For run.py testing
 model:
   type: "StarGANVC"; num_speakers: 109; speaker_embedding_dim: 256
   generator: {mel_channels: 80, hidden_channels: 512, bottleneck_channels: 256, num_downsample_blocks: 2, num_residual_blocks: 6, num_upsample_blocks: 2}
@@ -23,7 +27,7 @@ training:
   log_interval: 100; save_epoch_interval: 10; resume_from_epoch: 0
   lambda_g_adv: 1.0; lambda_g_cls: 1.0; lambda_identity: 5.0; lambda_reconstruction: 10.0
   lambda_d_adv: 1.0; lambda_d_cls: 1.0
-  device: "cuda"; batch_size_val: 4 # Added batch_size_val
+  device: "cuda"; batch_size_val: 4
 fine_tuning:
   base_model_checkpoint_path: "checkpoints/base_model_run_01/generator_epoch_500.pth"
   num_epochs: 200; learning_rate_g: 0.00005; learning_rate_d: 0.00002
@@ -33,23 +37,24 @@ inference_file:
   input_wav_path: "input_audio/source.wav"; output_wav_path: "output_audio/converted.wav"
   conversion_direction: "specific"; fine_tuned_model_path_female_generator: "checkpoints/ft_female_exp/model_best_generator.pth"
   fine_tuned_model_path_male_generator: "checkpoints/ft_male_exp/model_best_generator.pth"
-  specific_generator_checkpoint_path: "checkpoints/base_model_run_01/model_best_mcd_generator.pth" # Example path
+  specific_generator_checkpoint_path: "checkpoints/base_model_run_01/model_best_mcd_generator.pth"
   specific_target_speaker_id: 0; target_female_speaker_id: 0; target_male_speaker_id: 1
 inference_realtime:
-  input_device_index: -1; output_device_index: -1; noise_suppression_enabled: false
-  buffer_size_samples: 2048; conversion_direction: "specific"
+  input_device_index: -1
+  output_device_index: -1
+  noise_suppression_enabled: false
+  noise_prop_decrease: 0.8 # Коэффициент подавления шума (0.0 до 1.0)
+  buffer_size_samples: 1024 # Размер блока аудиопотока (от микрофона)
+  latency: 'low' # 'low', 'high', или float в секундах для sounddevice.Stream
+  # Параметры выбора целевого диктора
+  conversion_direction: "specific"
   fine_tuned_model_path_female_generator: "checkpoints/ft_female_exp/model_best_generator.pth"
   fine_tuned_model_path_male_generator: "checkpoints/ft_male_exp/model_best_generator.pth"
   specific_generator_checkpoint_path: "checkpoints/base_model_run_01/model_best_mcd_generator.pth"
-  target_female_speaker_id: 0; target_male_speaker_id: 1; specific_target_speaker_id: 0
-evaluation: # Added evaluation section
-  primary_metric: "mcd" # "mcd" or "f0_rmse"
-  mfcc_params:
-    n_mfcc: 24
-    n_fft: 1024 # Should ideally match data section or be specific for eval
-    hop_length: 256 # Should ideally match data section
-    win_length: 1024
-  f0_params:
-    fmin_hz: 60
-    fmax_hz: 800
-    hop_length: 256 # Should ideally match data section
+  target_female_speaker_id: 0
+  target_male_speaker_id: 1
+  specific_target_speaker_id: 0
+evaluation:
+  primary_metric: "mcd"; dtw_enabled: true
+  mfcc_params: {n_mfcc: 24, n_fft: 1024, hop_length: 256, win_length: 1024}
+  f0_params: {fmin_hz: 60, fmax_hz: 750, hop_length: 256}
