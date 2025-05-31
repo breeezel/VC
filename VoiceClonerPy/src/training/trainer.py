@@ -62,7 +62,7 @@ class Trainer:
         if self.val_loader:
             from ..models.vocoder import HiFiGANVocoder
             vocoder_checkpoint = self.model_config['vocoder']['checkpoint_path']
-            self.vocoder_eval = HiFiGANVocoder(checkpoint_path=vocoder_checkpoint, main_app_config=config) # Передаем main_app_config
+            self.vocoder_eval = HiFiGANVocoder(vocoder_checkpoint_path=vocoder_checkpoint, main_app_config=config) # Передаем main_app_config
             if self.vocoder_eval.model is None:
                 self.logger.warning("Валидация: Модель HiFi-GAN в vocoder_eval не загружена (None). Метрики будут использовать 'dummy' аудио.")
 
