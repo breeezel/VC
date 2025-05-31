@@ -15,8 +15,8 @@ import re   # Для find_latest_generator_checkpoint
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 
 TEST_VOICES_DIR = os.path.join(BASE_DIR, 'data', 'test_pipeline_voices')
-MALE_VOICE_NAME = "male_test_voice.wav"
-FEMALE_VOICE_NAME = "female_test_voice.wav"
+MALE_VOICE_NAME = "male.wav"
+FEMALE_VOICE_NAME = "female.wav"
 MALE_VOICE_PATH = os.path.join(TEST_VOICES_DIR, MALE_VOICE_NAME)
 FEMALE_VOICE_PATH = os.path.join(TEST_VOICES_DIR, FEMALE_VOICE_NAME)
 
