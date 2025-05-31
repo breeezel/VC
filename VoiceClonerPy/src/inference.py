@@ -5,13 +5,13 @@ import numpy as np
 
 from .models.stargan_vc import Generator
 from .models.vocoder import HiFiGANVocoder
-from .data_loader import load_wav, save_wav # Assuming load_wav and save_wav are in data_loader.py
+from .data_loader import load_wav, save_wav
 from .audio_utils import wav_to_mel_spectrogram
 
-# Setup basic logger for inference
+# Настройка базового логгера для инференса
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
-if not logger.handlers: # Add handler only if no handlers are configured
+if not logger.handlers:
     ch = logging.StreamHandler()
     formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
     ch.setFormatter(formatter)
@@ -19,144 +19,105 @@ if not logger.handlers: # Add handler only if no handlers are configured
 
 def convert_voice_from_file(full_config, generator_model_path, input_wav_path, output_wav_path, target_speaker_id_for_generator):
     """
-    Converts voice from an input WAV file to a target speaker's voice.
+    Конвертирует голос из входного WAV файла в голос целевого диктора.
     """
-    logger.info(f"Starting voice conversion for: {input_wav_path}")
-    logger.info(f"Generator model path: {generator_model_path}")
-    logger.info(f"Target speaker ID for generator: {target_speaker_id_for_generator}")
+    logger.info(f"Начало конвертации голоса для: {input_wav_path}")
+    logger.info(f"Путь к модели генератора: {generator_model_path}")
+    logger.info(f"ID целевого диктора для генератора: {target_speaker_id_for_generator}")
 
     try:
-        # Determine device
+        # Определение устройства
         if full_config['training']['device'] == 'cuda' and torch.cuda.is_available():
             device = torch.device('cuda')
         else:
             device = torch.device('cpu')
-        logger.info(f"Using device: {device}")
+        logger.info(f"Используется устройство: {device}")
 
-        # Instantiate Generator
-        # Generator now takes the 'model' part of the config
+        # Инициализация Генератора
         generator = Generator(config=full_config['model']).to(device)
 
-        # Load generator state dictionary
-        logger.info(f"Loading generator state from: {generator_model_path}")
+        logger.info(f"Загрузка состояния генератора из: {generator_model_path}")
         if not os.path.exists(generator_model_path):
-            logger.error(f"Generator checkpoint not found: {generator_model_path}")
+            logger.error(f"Чекпоинт генератора не найден: {generator_model_path}")
             return False
 
-        # Checkpoint might be saved directly or within a dict (e.g., {'generator_state_dict': ...})
-        # Standardizing to load directly if it's a state_dict, or look for common keys.
         checkpoint = torch.load(generator_model_path, map_location=device)
         if 'generator_state_dict' in checkpoint:
             generator.load_state_dict(checkpoint['generator_state_dict'])
-        elif 'model_state_dict' in checkpoint and 'generator' in checkpoint['model_state_dict']: # Old format
+        elif 'model_state_dict' in checkpoint and 'generator' in checkpoint['model_state_dict']:
              generator.load_state_dict(checkpoint['model_state_dict']['generator'])
-        elif 'state_dict' in checkpoint: # Another common pattern
+        elif 'state_dict' in checkpoint:
             generator.load_state_dict(checkpoint['state_dict'])
-        else: # Assume the checkpoint is the state_dict itself
+        else:
             generator.load_state_dict(checkpoint)
 
         generator.eval()
-        logger.info("Generator model loaded and set to eval mode.")
+        logger.info("Модель генератора загружена и переведена в режим оценки (eval).")
 
-        # Instantiate Vocoder
-        # Vocoder __init__ now takes checkpoint_path and the full_config
+        # Инициализация Вокодера
         vocoder_checkpoint_path = full_config['model']['vocoder']['checkpoint_path']
         if not vocoder_checkpoint_path or not os.path.exists(vocoder_checkpoint_path):
-            logger.warning(f"Vocoder checkpoint path not found or not specified: {vocoder_checkpoint_path}. Vocoder might return dummy audio.")
+            logger.warning(f"Путь к чекпоинту вокодера не найден или не указан: {vocoder_checkpoint_path}. Вокодер может возвращать 'dummy' аудио.")
         vocoder = HiFiGANVocoder(checkpoint_path=vocoder_checkpoint_path, config=full_config)
-        # Vocoder's internal model is already on its device if loaded
 
-        # Load source audio
-        logger.info(f"Loading source audio: {input_wav_path}")
+        # Загрузка исходного аудио
+        logger.info(f"Загрузка исходного аудио: {input_wav_path}")
         audio_data, sr = load_wav(input_wav_path, sample_rate=full_config['data']['sample_rate'])
         if audio_data is None:
-            logger.error(f"Failed to load audio from {input_wav_path}")
+            logger.error(f"Не удалось загрузить аудио из {input_wav_path}")
             return False
-        logger.info(f"Audio loaded. Sample rate: {sr}, Duration: {len(audio_data)/sr:.2f}s")
+        logger.info(f"Аудио загружено. Частота дискретизации: {sr}, Длительность: {len(audio_data)/sr:.2f}с")
 
-        # Convert audio to mel-spectrogram
-        logger.info("Converting audio to mel-spectrogram...")
+        # Конвертация аудио в мел-спектрограмму
+        logger.info("Конвертация аудио в мел-спектрограмму...")
         mel_spec = wav_to_mel_spectrogram(
-            audio_data,
-            sample_rate=sr, # Use actual sample rate from loaded audio (should match config)
-            n_fft=full_config['data']['n_fft'],
-            hop_length=full_config['data']['hop_length'],
-            n_mels=full_config['data']['n_mels'],
-            fmin=full_config['data']['fmin'],
-            fmax=full_config['data']['fmax'],
-            power_to_db=full_config['data']['power_to_db']
+            audio_data, sample_rate=sr,
+            n_fft=full_config['data']['n_fft'], hop_length=full_config['data']['hop_length'],
+            n_mels=full_config['data']['n_mels'], fmin=full_config['data']['fmin'],
+            fmax=full_config['data']['fmax'], power_to_db=full_config['data']['power_to_db']
         )
-        logger.info(f"Mel-spectrogram created. Shape: {mel_spec.shape}")
+        logger.info(f"Мел-спектрограмма создана. Форма: {mel_spec.shape}")
 
-        # Prepare mel tensor for generator
-        input_mel_tensor = torch.from_numpy(mel_spec).float().unsqueeze(0).to(device) # (1, n_mels, num_frames)
+        # Подготовка тензора мел-спектрограммы для генератора
+        input_mel_tensor = torch.from_numpy(mel_spec).float().unsqueeze(0).to(device)
 
-        # Prepare target speaker embedding tensor
-        # This assumes Generator's SpeakerAdaptationMLP has an nn.Embedding layer for integer IDs.
-        # Or, that _get_speaker_embedding is used internally if speaker_id is passed.
-        # The Generator model from previous step expects speaker_embedding_target directly.
-        # So, we need an embedding layer here, or pass ID if generator handles it.
-        # For consistency with Trainer, let's create an embedding on the fly.
-        # This is a simplification for inference; a shared embedding layer or lookup is better.
+        # Подготовка тензора эмбеддинга целевого диктора
         num_speakers = full_config['model']['num_speakers']
         speaker_embedding_dim = full_config['model']['speaker_embedding_dim']
+        # Временный слой эмбеддингов для инференса; в идеале - часть общей системы управления эмбеддингами
         temp_speaker_embedding_layer = nn.Embedding(num_speakers, speaker_embedding_dim).to(device)
-        target_speaker_emb_tensor = temp_speaker_embedding_layer(torch.tensor([target_speaker_id_for_generator], dtype=torch.long).to(device))
+        target_speaker_emb_tensor = temp_speaker_embedding_layer(
+            torch.tensor([target_speaker_id_for_generator], dtype=torch.long).to(device)
+        )
+        logger.info(f"Тензор эмбеддинга целевого диктора создан. Форма: {target_speaker_emb_tensor.shape}")
 
-        logger.info(f"Target speaker embedding tensor created. Shape: {target_speaker_emb_tensor.shape}")
-
-        # Perform inference
-        logger.info("Performing voice conversion (Generator inference)...")
+        # Выполнение инференса
+        logger.info("Выполнение преобразования голоса (инференс генератора)...")
         with torch.no_grad():
             output_mel_tensor = generator(input_mel_tensor, target_speaker_emb_tensor)
-        logger.info(f"Output mel-spectrogram from generator. Shape: {output_mel_tensor.shape}")
+        logger.info(f"Выходная мел-спектрограмма от генератора. Форма: {output_mel_tensor.shape}")
 
-        # Convert output mel-spectrogram to waveform using Vocoder
-        logger.info("Converting output mel-spectrogram to waveform (Vocoder inference)...")
-        # Vocoder expects mel on its device, output_mel_tensor is already on self.device
-        # Ensure output_mel_tensor is (B, C, T) or (C, T) for vocoder
-        # If generator outputs (B,C,T) and B=1, squeeze it.
-        # Vocoder.mel_to_wav should handle (B,C,T) or (C,T)
+        # Конвертация выходной мел-спектрограммы в аудио с помощью Вокодера
+        logger.info("Конвертация выходной мел-спектрограммы в аудио (инференс вокодера)...")
         if output_mel_tensor.ndim == 3 and output_mel_tensor.size(0) == 1:
-             processed_output_mel = output_mel_tensor.squeeze(0) # (n_mels, num_frames)
-        else:
-            processed_output_mel = output_mel_tensor # If already (n_mels, num_frames) or batched
+             processed_output_mel = output_mel_tensor.squeeze(0)
+        else: processed_output_mel = output_mel_tensor
+        output_waveform = vocoder.mel_to_wav(processed_output_mel.cpu()) # Вокодер может ожидать тензор на CPU
+        logger.info(f"Выходное аудио сгенерировано. Форма: {output_waveform.shape}, Тип: {output_waveform.dtype}")
 
-        output_waveform = vocoder.mel_to_wav(processed_output_mel.cpu()) # Vocoder might expect CPU tensor
-        logger.info(f"Output waveform generated. Shape: {output_waveform.shape}, Type: {output_waveform.dtype}")
+        # Сохранение выходного аудио
+        logger.info(f"Сохранение выходного аудио в: {output_wav_path}")
+        output_waveform_np = output_waveform.detach().cpu().numpy() if isinstance(output_waveform, torch.Tensor) else output_waveform
 
-        # Save output waveform
-        logger.info(f"Saving output waveform to: {output_wav_path}")
-        # Ensure output_waveform is a NumPy array for save_wav
-        if isinstance(output_waveform, torch.Tensor):
-            output_waveform_np = output_waveform.detach().cpu().numpy()
-        else:
-            output_waveform_np = output_waveform # If already numpy
-
-        # Ensure output dir exists
-        os.makedirs(os.path.dirname(output_wav_path), exist_ok=True)
-
+        os.makedirs(os.path.dirname(output_wav_path), exist_ok=True) # Создаем директорию, если ее нет
         success = save_wav(output_wav_path, output_waveform_np, full_config['data']['sample_rate'])
-        if success:
-            logger.info("Voice conversion completed successfully.")
-        else:
-            logger.error("Failed to save output waveform.")
+        if success: logger.info("Преобразование голоса успешно завершено.")
+        else: logger.error("Не удалось сохранить выходное аудио.")
         return success
-
     except Exception as e:
-        logger.error(f"An error occurred during voice conversion: {e}", exc_info=True)
+        logger.error(f"Произошла ошибка во время преобразования голоса: {e}", exc_info=True)
         return False
 
 if __name__ == '__main__':
-    # Example usage (requires a config file and models)
-    print("This script is intended to be called from run.py or programmatically.")
-    # Example:
-    # config = load_config("path_to_your_config.yaml")
-    # if config:
-    #     convert_voice_from_file(
-    #         full_config=config,
-    #         generator_model_path="path_to_generator.pth",
-    #         input_wav_path="path_to_source.wav",
-    #         output_wav_path="output/converted_audio.wav",
-    #         target_speaker_id_for_generator=0 # Example target speaker ID
-    #     )
+    # Пример использования (требует наличия конфигурационного файла и моделей)
+    print("Этот скрипт предназначен для вызова из run.py или программно.")

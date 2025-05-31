@@ -1,41 +1,44 @@
 import sounddevice as sd
-import numpy as np
+import numpy as np # Не используется здесь напрямую, но часто нужен вместе с sounddevice
 
 def list_audio_devices():
-    """Lists available audio input and output devices."""
-    print("Available audio devices:")
+    """Выводит список доступных аудиоустройств ввода и вывода."""
+    print("Доступные аудиоустройства:")
     devices = sd.query_devices()
+    if not devices:
+        print("Аудиоустройства не найдены.")
+        return []
     for i, device in enumerate(devices):
         print(f"  ID {i}: {device['name']}")
-        print(f"    Max input channels: {device['max_input_channels']}")
-        print(f"    Max output channels: {device['max_output_channels']}")
-        print(f"    Default samplerate: {device['default_samplerate']}")
+        print(f"    Макс. каналов ввода: {device['max_input_channels']}")
+        print(f"    Макс. каналов вывода: {device['max_output_channels']}")
+        print(f"    Стандартная частота дискр.: {device['default_samplerate']}")
     return devices
 
-def select_device_id(prompt_message="Select device by ID: ", kind="input/output"):
+def select_device_id(prompt_message="Выберите ID устройства: ", kind="ввода/вывода"):
     """
-    Prompts the user to select an audio device ID from the listed devices.
+    Запрашивает у пользователя ID аудиоустройства из списка.
     Args:
-        prompt_message (str): The message to display to the user.
-        kind (str): Type of device being selected, for context in prompt.
+        prompt_message (str): Сообщение для пользователя.
+        kind (str): Тип устройства (для контекста в сообщении).
     Returns:
-        int: The selected device ID, or None if input is invalid.
+        int: Выбранный ID устройства, или None при неверном вводе.
     """
     while True:
         try:
             device_id_str = input(prompt_message)
-            if not device_id_str: # Handle empty input, perhaps by returning a default or None
-                print(f"No device selected for {kind}. Please provide a valid ID or check your configuration.")
+            if not device_id_str:
+                print(f"Для {kind} не выбрано устройство. Укажите корректный ID или проверьте конфигурацию.")
                 return None
             device_id = int(device_id_str)
-            # Basic validation, assumes sd.query_devices() would have been called and shown to user
-            # A more robust version would check against len(sd.query_devices())
+            # Здесь можно добавить проверку на существование устройства с таким ID,
+            # сравнив с len(sd.query_devices()), но для простоты опускаем.
             if device_id >= 0:
                 return device_id
             else:
-                print("Invalid device ID. Please enter a non-negative integer.")
+                print("Неверный ID устройства. Введите неотрицательное целое число.")
         except ValueError:
-            print("Invalid input. Please enter a numerical ID.")
+            print("Неверный ввод. Введите числовой ID.")
         except Exception as e:
-            print(f"An error occurred: {e}")
+            print(f"Произошла ошибка: {e}")
             return None
