@@ -231,7 +231,7 @@ def main(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="VoiceClonerPy: Система клонирования голоса.")
-    parser.add_argument('--config', type=str, default="config/config_template.yaml", help="Путь к YAML файлу конфигурации.")
+    parser.add_argument('--config', type=str, default=os.path.join(os.path.dirname(__file__), '..', 'config', 'config_template.yaml'), help="Путь к YAML файлу конфигурации.")
     parser.add_argument('--mode', type=str, choices=['train', 'fine_tune', 'inference_file', 'inference_realtime'], help="Переопределить режим работы.")
     cmd_args = parser.parse_args()
     main(cmd_args)

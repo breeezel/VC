@@ -80,11 +80,15 @@ def segment_audio(input_wav_path, speaker_output_dir, segment_duration_s, target
     print(f"Создано {len(segment_paths)} сегментов из {input_wav_path}")
     return segment_paths
 
-def create_metadata_file(segments_info_list, output_csv_path):
+def create_metadata_file(segments_info_list, output_csv_path, is_validation_file=False):
     print(f"Создание файла метаданных: {output_csv_path}")
     os.makedirs(os.path.dirname(output_csv_path), exist_ok=True)
     with open(output_csv_path, 'w', newline='', encoding='utf-8') as f:
-        writer = csv.writer(f); writer.writerow(['wav_path', 'speaker_id', 'speaker_name'])
+        writer = csv.writer(f)
+        if is_validation_file:
+            writer.writerow(['source_audio_path', 'target_original_audio_path', 'source_speaker_id', 'target_speaker_id_for_conversion'])
+        else:
+            writer.writerow(['wav_path', 'speaker_id', 'speaker_name'])
         for info in segments_info_list: writer.writerow(info)
     print(f"Файл метаданных {output_csv_path} создан с {len(segments_info_list)} записями.")
 
@@ -247,9 +251,37 @@ if __name__ == '__main__':
     train_info, val_info = all_segments_info[:split_idx], all_segments_info[split_idx:]
     if not train_info: print("Ошибка: Нет данных для обучения."); sys.exit(1)
 
+    if val_info:
+        processed_val_info = []
+        for val_entry in val_info:
+            wav_path, speaker_id, _ = val_entry # speaker_name не используется для val
+
+            source_audio_path = wav_path
+            source_speaker_id = speaker_id
+            target_original_audio_path = wav_path # Упрощение для теста
+
+            # Определяем target_speaker_id_for_conversion
+            if speaker_id == MALE_SPEAKER_ID:
+                target_speaker_id_for_conversion = FEMALE_SPEAKER_ID
+            elif speaker_id == FEMALE_SPEAKER_ID:
+                target_speaker_id_for_conversion = MALE_SPEAKER_ID
+            else:
+                # Если диктор не мужской и не женский (неожиданно для этого теста),
+                # или если у нас только один тип диктора в val_info,
+                # то используем тот же ID.
+                target_speaker_id_for_conversion = speaker_id
+
+            processed_val_info.append((
+                source_audio_path,
+                target_original_audio_path,
+                source_speaker_id,
+                target_speaker_id_for_conversion
+            ))
+        val_info = processed_val_info # Заменяем val_info на обработанный список
+
     create_metadata_file(train_info, TRAIN_METADATA_FILE)
     current_val_meta_file = VAL_METADATA_FILE
-    if val_info: create_metadata_file(val_info, VAL_METADATA_FILE)
+    if val_info: create_metadata_file(val_info, VAL_METADATA_FILE, is_validation_file=True)
     else: print("Предупреждение: Нет данных для валидации."); current_val_meta_file = None
 
     # Генерация конфига для обучения
