@@ -105,10 +105,16 @@ def convert_voice_from_file(full_config, generator_model_path, input_wav_path, o
         output_waveform = vocoder.mel_to_wav(processed_output_mel.cpu()) # Вокодер может ожидать тензор на CPU
         logger.info(f"Выходное аудио сгенерировано. Форма: {output_waveform.shape}, Тип: {output_waveform.dtype}")
 
-        # Сохранение выходного аудио
-        logger.info(f"Сохранение выходного аудио в: {output_wav_path}")
         output_waveform_np = output_waveform.detach().cpu().numpy() if isinstance(output_waveform, torch.Tensor) else output_waveform
 
+        # Проверка и очистка от NaN/Inf
+        if np.isnan(output_waveform_np).any() or np.isinf(output_waveform_np).any():
+            logger.warning("Обнаружены NaN или Inf значения в выходных аудиоданных. Производится очистка...")
+            output_waveform_np = np.nan_to_num(output_waveform_np, nan=0.0, posinf=0.0, neginf=0.0) # Заменяем на 0.0
+            logger.info("NaN/Inf значения заменены на 0.")
+
+        # Сохранение выходного аудио
+        logger.info(f"Сохранение выходного аудио в: {output_wav_path}")
         os.makedirs(os.path.dirname(output_wav_path), exist_ok=True) # Создаем директорию, если ее нет
         success = save_wav(output_wav_path, output_waveform_np, full_config['data']['sample_rate'])
         if success: logger.info("Преобразование голоса успешно завершено.")
