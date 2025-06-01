@@ -111,7 +111,7 @@ def generate_test_config(template_path, output_config_path, train_meta_path, val
     # Путь к логам относительно корня проекта
     config['training']['log_file_path'] = os.path.join("logs", f"{TEST_EXPERIMENT_NAME}.log")
     # Базовая директория для чекпоинтов относительно корня проекта
-    config['training']['checkpoint_dir'] = CHECKPOINTS_BASE_DIR_FROM_ROOT
+    config['training']['checkpoint_dir'] = os.path.abspath(os.path.join(BASE_DIR, CHECKPOINTS_BASE_DIR_FROM_ROOT))
     config['model']['vocoder']['checkpoint_path'] = "dummy_vocoder_checkpoint.pth"
     config['model']['vocoder']['config_path'] = "dummy_vocoder_config.json"
     # Убедимся, что пути абсолютные или корректно относительные для run.py
