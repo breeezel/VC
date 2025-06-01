@@ -144,6 +144,16 @@ def calculate_f0_rmse(converted_audio_data, target_audio_data, sample_rate, f0_p
 
         logger.debug(f"Длина F0 (конверт.): {len(f0_converted)}, (цель): {len(f0_target)}")
 
+        # Обеспечиваем одинаковую длину для f0_converted и f0_target
+        if f0_converted is not None and f0_target is not None: # Дополнительная проверка, что они не None
+            min_len = min(len(f0_converted), len(f0_target))
+            f0_converted = f0_converted[:min_len]
+            f0_target = f0_target[:min_len]
+        else:
+            # Если один из них None, F0-RMSE вычислить невозможно или будет некорректным
+            logger.warning("Не удалось извлечь F0 для одного или обоих аудиофайлов. F0-RMSE будет inf.")
+            return float('inf')
+
         # Обработка NaN (неозвученные кадры) - оставляем только те кадры, где оба F0 определены
         voiced_mask = ~np.isnan(f0_converted) & ~np.isnan(f0_target)
 

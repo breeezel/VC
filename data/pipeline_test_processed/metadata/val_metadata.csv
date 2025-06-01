@@ -1,7 +1,7 @@
-wav_path,speaker_id,speaker_name
-C:\Users\korol\PycharmProjects\VC\data\pipeline_test_processed\speaker_female\segment_18.wav,1,female_test
-C:\Users\korol\PycharmProjects\VC\data\pipeline_test_processed\speaker_male\segment_22.wav,0,male_test
-C:\Users\korol\PycharmProjects\VC\data\pipeline_test_processed\speaker_male\segment_17.wav,0,male_test
-C:\Users\korol\PycharmProjects\VC\data\pipeline_test_processed\speaker_male\segment_16.wav,0,male_test
-C:\Users\korol\PycharmProjects\VC\data\pipeline_test_processed\speaker_male\segment_31.wav,0,male_test
-C:\Users\korol\PycharmProjects\VC\data\pipeline_test_processed\speaker_female\segment_19.wav,1,female_test
+source_audio_path,target_original_audio_path,source_speaker_id,target_speaker_id_for_conversion
+/app/data/pipeline_test_processed/speaker_female/segment_4.wav,/app/data/pipeline_test_processed/speaker_female/segment_4.wav,1,0
+/app/data/pipeline_test_processed/speaker_male/segment_5.wav,/app/data/pipeline_test_processed/speaker_male/segment_5.wav,0,1
+/app/data/pipeline_test_processed/speaker_female/segment_3.wav,/app/data/pipeline_test_processed/speaker_female/segment_3.wav,1,0
+/app/data/pipeline_test_processed/speaker_female/segment_5.wav,/app/data/pipeline_test_processed/speaker_female/segment_5.wav,1,0
+/app/data/pipeline_test_processed/speaker_male/segment_32.wav,/app/data/pipeline_test_processed/speaker_male/segment_32.wav,0,1
+/app/data/pipeline_test_processed/speaker_male/segment_33.wav,/app/data/pipeline_test_processed/speaker_male/segment_33.wav,0,1

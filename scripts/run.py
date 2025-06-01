@@ -125,6 +125,71 @@ def main(args):
     except Exception as e: logger.error(f"Неожиданная ошибка при загрузке конфигурации {args.config}: {e}. Выход."); sys.exit(1)
     if not config: logger.error(f"Не удалось загрузить конфигурацию из {args.config}. Выход."); sys.exit(1)
 
+    config_dir = os.path.dirname(os.path.abspath(args.config))
+    # logger.info(f"Директория конфигурационного файла: {config_dir}") # Для отладки
+
+    # Функция для преобразования относительного пути в абсолютный
+    def resolve_path_in_config(config_dict, key_path_tuple, base_dir):
+        # config_dict - текущий уровень словаря конфигурации
+        # key_path_tuple - кортеж ключей для доступа к значению пути
+        # base_dir - базовый каталог для разрешения относительных путей (каталог YAML файла)
+
+        current_level = config_dict
+        key_trace_log = [] # Для логирования
+
+        for i, key in enumerate(key_path_tuple):
+            key_trace_log.append(key)
+            if isinstance(current_level, dict) and key in current_level:
+                if i == len(key_path_tuple) - 1: # Если это последний ключ, то это сам путь
+                    path_value = current_level[key]
+                    if isinstance(path_value, str) and path_value.strip(): # Убедимся, что это непустая строка
+                        if not os.path.isabs(path_value):
+                            abs_path = os.path.join(base_dir, path_value)
+                            current_level[key] = os.path.normpath(abs_path)
+                            # logger.debug(f"Config: Преобразован относительный путь {'.'.join(key_trace_log)}: '{path_value}' -> '{current_level[key]}'")
+                        else:
+                            # Нормализуем уже абсолютный путь
+                            current_level[key] = os.path.normpath(path_value)
+                            # logger.debug(f"Config: Нормализован абсолютный путь {'.'.join(key_trace_log)}: '{path_value}' -> '{current_level[key]}'")
+                    # Если path_value это не строка (например, None или число), ничего не делаем
+                    return # Завершаем обработку для этого кортежа ключей
+                else: # Если не последний ключ, углубляемся
+                    current_level = current_level[key]
+            else: # Ключ не найден на текущем уровне
+                # logger.debug(f"Config: Ключ '{key}' в пути {'.'.join(key_trace_log)} не найден. Пропуск.")
+                return # Завершаем, так как полный путь не может быть разрешен
+
+    # Список кортежей ключей путей для преобразования
+    # Каждый кортеж представляет собой путь к значению в словаре config
+    paths_to_resolve = [
+        ('data', 'base_data_path'),
+        ('data', 'train_metadata_file'),
+        ('data', 'val_metadata_file'),
+        ('data', 'base_model_corpus_dir'),
+        ('data', 'fine_tune_user_data_dir'),
+
+        ('training', 'log_file_path'),
+        ('training', 'checkpoint_dir'),
+
+        ('model', 'vocoder', 'checkpoint_path'),
+        ('model', 'vocoder', 'config_path'),
+
+        # Для fine-tuning
+        ('fine_tuning', 'base_model_checkpoint_path'),
+
+        # Для inference_file
+        ('inference_file', 'input_wav_path'),
+        ('inference_file', 'output_wav_path'),
+        ('inference_file', 'fine_tuned_model_path_female_generator'),
+        ('inference_file', 'fine_tuned_model_path_male_generator'),
+        ('inference_file', 'specific_generator_checkpoint_path'),
+    ]
+
+    # logger.info("Преобразование относительных путей в конфигурации...")
+    for p_keys in paths_to_resolve:
+        resolve_path_in_config(config, p_keys, config_dir)
+    # logger.info("Преобразование путей в конфигурации завершено.")
+
     effective_mode = config['training'].get('mode', 'train')
     if args.mode: effective_mode = args.mode; config['training']['mode'] = effective_mode
 
