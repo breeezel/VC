@@ -22,7 +22,7 @@ def load_wav(file_path, sample_rate=None):
 
 def save_wav(file_path, audio_data, sample_rate):
     try:
-        sf.write(file_path, audio_data, sample_rate)
+        sf.write(file_path, audio_data, sample_rate, format='WAV', subtype='FLOAT')
         return True
     except Exception as e:
         logger.error(f"Ошибка сохранения WAV файла {file_path}: {e}")
