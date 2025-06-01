@@ -6,9 +6,9 @@ project:
 data:
   base_model_corpus_dir: "../data/VCTK-Corpus/wav48_silence_trimmed/"
   fine_tune_user_data_dir: "../data/user_audio_samples/"
-  train_metadata_file: "../data/train_metadata.csv"
+  train_metadata_file: "../data/pipeline_test_processed/metadata/train_metadata.csv"
   val_data_dir: "../data/val_dataset_wavs/"
-  val_metadata_file: "../data/val_metadata.csv"
+  val_metadata_file: "../data/pipeline_test_processed/metadata/val_metadata.csv"
   sample_rate: 22050       # Частота дискретизации
   n_fft: 1024              # Размер окна БПФ
   hop_length: 256          # Шаг окна (сдвиг)
