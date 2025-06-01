@@ -1,7 +1,7 @@
 source_audio_path,target_original_audio_path,source_speaker_id,target_speaker_id_for_conversion
-/app/data/pipeline_test_processed/speaker_male/segment_18.wav,/app/data/pipeline_test_processed/speaker_male/segment_18.wav,0,1
-/app/data/pipeline_test_processed/speaker_female/segment_3.wav,/app/data/pipeline_test_processed/speaker_female/segment_3.wav,1,0
-/app/data/pipeline_test_processed/speaker_female/segment_23.wav,/app/data/pipeline_test_processed/speaker_female/segment_23.wav,1,0
-/app/data/pipeline_test_processed/speaker_female/segment_7.wav,/app/data/pipeline_test_processed/speaker_female/segment_7.wav,1,0
-/app/data/pipeline_test_processed/speaker_female/segment_2.wav,/app/data/pipeline_test_processed/speaker_female/segment_2.wav,1,0
-/app/data/pipeline_test_processed/speaker_male/segment_13.wav,/app/data/pipeline_test_processed/speaker_male/segment_13.wav,0,1
+/app/data/pipeline_test_processed/speaker_female/segment_17.wav,/app/data/pipeline_test_processed/speaker_female/segment_17.wav,1,0
+/app/data/pipeline_test_processed/speaker_male/segment_12.wav,/app/data/pipeline_test_processed/speaker_male/segment_12.wav,0,1
+/app/data/pipeline_test_processed/speaker_male/segment_34.wav,/app/data/pipeline_test_processed/speaker_male/segment_34.wav,0,1
+/app/data/pipeline_test_processed/speaker_female/segment_6.wav,/app/data/pipeline_test_processed/speaker_female/segment_6.wav,1,0
+/app/data/pipeline_test_processed/speaker_male/segment_28.wav,/app/data/pipeline_test_processed/speaker_male/segment_28.wav,0,1
+/app/data/pipeline_test_processed/speaker_male/segment_14.wav,/app/data/pipeline_test_processed/speaker_male/segment_14.wav,0,1

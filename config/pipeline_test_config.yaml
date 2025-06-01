@@ -51,7 +51,7 @@ training:
   optimizer_betas:
   - 0.5
   - 0.999
-  checkpoint_dir: checkpoints
+  checkpoint_dir: /app/checkpoints
   log_file_path: /app/logs/pipeline_test_experiment.log
   log_interval: 100
   save_epoch_interval: 10
