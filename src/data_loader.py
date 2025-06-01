@@ -22,6 +22,14 @@ def load_wav(file_path, sample_rate=None):
 
 def save_wav(file_path, audio_data, sample_rate):
     try:
+        parent_dir = os.path.dirname(file_path)
+        if parent_dir and not os.path.exists(parent_dir):
+            os.makedirs(parent_dir, exist_ok=True)
+            logger.info(f"Создана директория для сохранения: {parent_dir}")
+
+        # Обеспечиваем C-contiguous формат
+        audio_data = np.ascontiguousarray(audio_data)
+
         sf.write(file_path, audio_data, sample_rate, format='WAV', subtype='FLOAT')
         return True
     except Exception as e:
