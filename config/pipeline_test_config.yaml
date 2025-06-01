@@ -5,6 +5,7 @@ project:
 data:
   base_model_corpus_dir: null
   fine_tune_user_data_dir: null
+  train_metadata_file: /app/data/pipeline_test_processed/metadata/train_metadata.csv
   val_data_dir: null
   val_metadata_file: /app/data/pipeline_test_processed/metadata/val_metadata.csv
   sample_rate: 22050
@@ -22,7 +23,6 @@ data:
   pin_memory: true
   segment_length_sec: 2
   base_data_path: /app/data/pipeline_test_processed
-  train_metadata_file: /app/data/pipeline_test_processed/metadata/train_metadata.csv
 model:
   type: StarGANVC
   num_speakers: 2
@@ -65,7 +65,7 @@ training:
   device: cuda
   batch_size_val: 2
 fine_tuning:
-  base_model_checkpoint_path: checkpoints/base_model_run_01/generator_epoch_500.pth
+  base_model_checkpoint_path: ../checkpoints/base_model_run_01/generator_epoch_500.pth
   num_epochs: 200
   learning_rate_g: 5.0e-05
   learning_rate_d: 2.0e-05
@@ -74,12 +74,12 @@ fine_tuning:
   lambda_identity_ft: 10.0
   lambda_reconstruction_ft: 20.0
 inference_file:
-  input_wav_path: male.wav
-  output_wav_path: output_audio/converted.wav
+  input_wav_path: ../male.wav
+  output_wav_path: ../output_audio/converted.wav
   conversion_direction: specific
-  fine_tuned_model_path_female_generator: checkpoints/ft_female_exp/model_best_generator.pth
-  fine_tuned_model_path_male_generator: checkpoints/ft_male_exp/model_best_generator.pth
-  specific_generator_checkpoint_path: checkpoints/base_model_run_01/model_best_mcd_generator.pth
+  fine_tuned_model_path_female_generator: ../checkpoints/ft_female_exp/model_best_generator.pth
+  fine_tuned_model_path_male_generator: ../checkpoints/ft_male_exp/model_best_generator.pth
+  specific_generator_checkpoint_path: ../checkpoints/base_model_run_01/model_best_mcd_generator.pth
   specific_target_speaker_id: 0
   target_female_speaker_id: 0
   target_male_speaker_id: 1
@@ -91,9 +91,9 @@ inference_realtime:
   buffer_size_samples: 1024
   latency: low
   conversion_direction: specific
-  fine_tuned_model_path_female_generator: checkpoints/ft_female_exp/model_best_generator.pth
-  fine_tuned_model_path_male_generator: checkpoints/ft_male_exp/model_best_generator.pth
-  specific_generator_checkpoint_path: checkpoints/base_model_run_01/model_best_mcd_generator.pth
+  fine_tuned_model_path_female_generator: ../checkpoints/ft_female_exp/model_best_generator.pth
+  fine_tuned_model_path_male_generator: ../checkpoints/ft_male_exp/model_best_generator.pth
+  specific_generator_checkpoint_path: ../checkpoints/base_model_run_01/model_best_mcd_generator.pth
   target_female_speaker_id: 0
   target_male_speaker_id: 1
   specific_target_speaker_id: 0

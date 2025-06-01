@@ -58,7 +58,7 @@ def convert_voice_from_file(full_config, generator_model_path, input_wav_path, o
         vocoder_checkpoint_path = full_config['model']['vocoder']['checkpoint_path']
         if not vocoder_checkpoint_path or not os.path.exists(vocoder_checkpoint_path):
             logger.warning(f"Путь к чекпоинту вокодера не найден или не указан: {vocoder_checkpoint_path}. Вокодер может возвращать 'dummy' аудио.")
-        vocoder = HiFiGANVocoder(checkpoint_path=vocoder_checkpoint_path, config=full_config)
+        vocoder = HiFiGANVocoder(vocoder_checkpoint_path=vocoder_checkpoint_path, main_app_config=full_config)
 
         # Загрузка исходного аудио
         logger.info(f"Загрузка исходного аудио: {input_wav_path}")
