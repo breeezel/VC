@@ -171,45 +171,55 @@ def find_latest_generator_checkpoint(checkpoints_root_dir, experiment_name, targ
         print(f"Предупреждение: Директория чекпоинтов эксперимента не найдена: {experiment_checkpoint_dir}")
         return None
 
-    if target_epoch is not None: # Ищем чекпоинт для конкретной эпохи
-        # Имена могут включать метрики, например: generator_epoch_X_train_g_loss_Y.pth
-        # Или model_best_mcd_generator.pth
-        # Для простоты ищем по 'epoch_X'
-        search_pattern = os.path.join(experiment_checkpoint_dir, f"*generator_epoch_{target_epoch}*.pth")
-    else: # Ищем самый последний по номеру эпохи
-        search_pattern = os.path.join(experiment_checkpoint_dir, "*generator_epoch_*.pth")
+    # 1. Поиск для конкретной эпохи, если target_epoch указан
+    if target_epoch is not None:
+        epoch_specific_pattern = os.path.join(experiment_checkpoint_dir, f"*generator_epoch_{target_epoch}*.pth")
+        epoch_checkpoints = glob.glob(epoch_specific_pattern)
+        if epoch_checkpoints:
+            print(f"Найден чекпоинт для эпохи {target_epoch}: {epoch_checkpoints[0]}")
+            return epoch_checkpoints[0]
+        else:
+            print(f"Предупреждение: Чекпоинт для эпохи {target_epoch} (шаблон: {epoch_specific_pattern}) не найден. Поиск других чекпоинтов...")
 
-    checkpoints = glob.glob(search_pattern)
-    if not checkpoints:
-        # Попробуем найти 'model_best_..._generator.pth' если обычные не найдены или target_epoch не указан
-        if target_epoch is None: # Ищем лучший, только если не указана конкретная эпоха
-            best_checkpoints = glob.glob(os.path.join(experiment_checkpoint_dir, "model_best_*_generator.pth"))
-            if best_checkpoints:
-                # Если есть несколько "лучших" (например, по разным метрикам), берем первый найденный
-                print(f"Найден 'лучший' чекпоинт: {best_checkpoints[0]}")
-                return best_checkpoints[0]
+    # 2. Поиск "лучшего" чекпоинта (если target_epoch не указан или чекпоинт для него не найден)
+    best_checkpoint_pattern = os.path.join(experiment_checkpoint_dir, "model_best_*_generator.pth")
+    best_checkpoints = glob.glob(best_checkpoint_pattern)
+    if best_checkpoints:
+        # Если есть несколько "лучших" (например, по разным метрикам), берем первый найденный
+        print(f"Найден 'лучший' чекпоинт генератора: {best_checkpoints[0]}")
+        return best_checkpoints[0]
+    else:
+        if target_epoch is not None: # Если искали конкретную эпоху и не нашли, а теперь и лучшего нет
+             print(f"Предупреждение: 'Лучший' чекпоинт (шаблон: {best_checkpoint_pattern}) также не найден.")
+        # Если target_epoch не был указан, то это первый поиск после проверки директории
 
-        print(f"Предупреждение: Чекпоинты генератора не найдены по шаблону: {search_pattern}")
-        return None
+    # 3. Поиск последнего по номеру эпохи (если target_epoch не указан и "лучший" не найден)
+    # Этот блок имеет смысл, только если target_epoch НЕ был указан изначально.
+    # Если target_epoch был указан, и мы дошли сюда, значит ни для эпохи, ни лучший не найден.
+    if target_epoch is None:
+        any_epoch_pattern = os.path.join(experiment_checkpoint_dir, "*generator_epoch_*.pth")
+        any_epoch_checkpoints = glob.glob(any_epoch_pattern)
+        if any_epoch_checkpoints:
+            latest_by_epoch_num = None
+            max_epoch = -1
+            for cp in any_epoch_checkpoints:
+                filename = os.path.basename(cp)
+                match = re.search(r"epoch_(\d+)", filename)
+                if match:
+                    epoch_num = int(match.group(1))
+                    if epoch_num > max_epoch:
+                        max_epoch = epoch_num
+                        latest_by_epoch_num = cp
+            if latest_by_epoch_num:
+                print(f"Найден последний чекпоинт по номеру эпохи ({max_epoch}): {latest_by_epoch_num}")
+                return latest_by_epoch_num
+            else:
+                print(f"Не удалось извлечь номер эпохи из файлов (шаблон: {any_epoch_pattern}): {any_epoch_checkpoints}")
+        else:
+            print(f"Предупреждение: Чекпоинты генератора по номеру эпохи (шаблон: {any_epoch_pattern}) также не найдены.")
 
-    latest_checkpoint = None
-    max_epoch = -1
-    if target_epoch is None: # Если ищем самый последний по номеру
-        for cp in checkpoints:
-            filename = os.path.basename(cp)
-            match = re.search(r"epoch_(\d+)", filename)
-            if match:
-                epoch_num = int(match.group(1))
-                if epoch_num > max_epoch:
-                    max_epoch = epoch_num
-                    latest_checkpoint = cp
-        if latest_checkpoint: print(f"Найден последний чекпоинт (эпоха {max_epoch}): {latest_checkpoint}")
-        else: print(f"Не удалось извлечь номер эпохи из найденных файлов: {checkpoints}")
-    else: # Если искали конкретную эпоху, берем первый попавшийся (может быть несколько с метриками)
-        latest_checkpoint = checkpoints[0]
-        print(f"Найден чекпоинт для эпохи {target_epoch}: {latest_checkpoint}")
-
-    return latest_checkpoint
+    print(f"Предупреждение: Подходящий чекпоинт генератора не найден в {experiment_checkpoint_dir}")
+    return None
 
 
 def run_main_script(config_path, mode="train"):
