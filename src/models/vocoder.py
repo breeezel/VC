@@ -88,5 +88,6 @@ class HiFiGANVocoder(nn.Module):
         if mel_spectrogram.ndim == 2: mel_spectrogram = mel_spectrogram.unsqueeze(0) # (C, T) -> (1, C, T)
 
         output_waveform = self.model(mel_spectrogram) # (B, 1, Samples)
+        logger.debug(f"HiFiGAN raw output shape: {output_waveform.shape}, dtype: {output_waveform.dtype}")
         # .squeeze(1) удаляет канал, .cpu() перемещает на CPU. Если батч=1, можно .squeeze(0) для (Samples,)
         return output_waveform.squeeze(1).cpu()

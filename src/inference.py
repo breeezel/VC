@@ -113,6 +113,19 @@ def convert_voice_from_file(full_config, generator_model_path, input_wav_path, o
             output_waveform_np = np.nan_to_num(output_waveform_np, nan=0.0, posinf=0.0, neginf=0.0) # Заменяем на 0.0
             logger.info("NaN/Inf значения заменены на 0.")
 
+        # Нормализация аудиоданных
+        if output_waveform_np.size > 0:
+            max_val = np.max(np.abs(output_waveform_np))
+            if max_val > 1.0:
+                output_waveform_np = output_waveform_np / max_val
+                logger.info(f"Аудиоданные нормализованы (макс. абс. значение было {max_val:.4f}).")
+            elif max_val == 0: # Избегаем деления на ноль если весь сигнал нулевой
+                logger.warning("Аудиоданные состоят из нулей, нормализация не требуется/невозможна.")
+            else: # max_val <= 1.0 and max_val > 0
+                logger.info(f"Аудиоданные уже в диапазоне [-1.0, 1.0] (макс. абс. значение {max_val:.4f}), дополнительная нормализация не применена.")
+        else:
+            logger.warning("Аудиоданные пусты, нормализация невозможна.")
+
         # Сохранение выходного аудио
         logger.info(f"Сохранение выходного аудио в: {output_wav_path}")
         os.makedirs(os.path.dirname(output_wav_path), exist_ok=True) # Создаем директорию, если ее нет
