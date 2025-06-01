@@ -1,4 +1,5 @@
 import torch
+import torch.nn as nn
 import sounddevice as sd
 import numpy as np
 import logging
@@ -73,7 +74,7 @@ class RealTimeVoiceConverter:
 
         logger.info("Загрузка модели Вокодера HiFi-GAN...")
         vocoder_checkpoint = self.model_config['vocoder']['checkpoint_path']
-        self.vocoder = HiFiGANVocoder(checkpoint_path=vocoder_checkpoint, main_app_config=full_config) # Передаем main_app_config
+        self.vocoder = HiFiGANVocoder(vocoder_checkpoint_path=vocoder_checkpoint, main_app_config=full_config) # Передаем main_app_config
         if self.vocoder.model is None: logger.warning("Модель HiFi-GAN в вокодере не загружена (None). Воспроизведение будет 'dummy' аудио.")
 
         # Подавление шума
@@ -107,7 +108,7 @@ class RealTimeVoiceConverter:
         # 1. Подавление шума (если включено)
         if self.noise_reduction_enabled and noisereduce:
             try:
-                current_chunk = noisereduce.reduce_noise(y=current_chunk, sr=self.sample_rate, prop_decrease=self.noise_prop_decrease, verbose=False)
+                current_chunk = noisereduce.reduce_noise(y=current_chunk, sr=self.sample_rate, prop_decrease=self.noise_prop_decrease)
             except Exception as e:
                 logger.error(f"Ошибка при подавлении шума: {e}", exc_info=False) # Не выводим полный стектрейс в колбэке
 

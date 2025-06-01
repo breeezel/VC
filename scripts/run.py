@@ -116,6 +116,7 @@ def load_data_for_dataset(data_root_path, metadata_file_path, num_expected_speak
 
 
 def main(args):
+    global converter
     print(f"VoiceClonerPy запускается...")
     print(f"Используется конфигурационный файл: {args.config}")
 
@@ -245,7 +246,7 @@ def main(args):
             if base_model_g_path and os.path.exists(base_model_g_path):
                 logger.info(f"Загрузка базового генератора из: {base_model_g_path} для fine-tuning.")
                 try:
-                    gen_ckpt = torch.load(base_model_g_path, map_location=device);
+                    gen_ckpt = torch.load(base_model_g_path, map_location=device)
                     if 'generator_state_dict' in gen_ckpt: generator.load_state_dict(gen_ckpt['generator_state_dict'])
                     else: generator.load_state_dict(gen_ckpt)
                 except Exception as e: logger.error(f"Ошибка загрузки чекпоинта: {e}")
@@ -259,7 +260,7 @@ def main(args):
     elif effective_mode == 'inference_file':
         # ... (логика inference_file как в предыдущем шаге) ...
         logger.info("Настройка для режима 'inference_file'...")
-        inf_conf = config.get('inference_file');
+        inf_conf = config.get('inference_file')
         if not inf_conf: logger.error("Секция `inference_file` отсутствует. Выход."); sys.exit(1)
         model_path_to_load, target_speaker_id = None, 0
         direction = inf_conf.get('conversion_direction', 'specific')
@@ -274,7 +275,7 @@ def main(args):
     elif effective_mode == 'inference_realtime':
         # ... (логика inference_realtime как в предыдущем шаге) ...
         logger.info("Настройка для режима 'inference_realtime'...")
-        rt_conf = config.get('inference_realtime');
+        rt_conf = config.get('inference_realtime')
         if not rt_conf: logger.error("Секция `inference_realtime` отсутствует. Выход."); sys.exit(1)
         list_audio_devices()
         input_dev_idx = rt_conf.get('input_device_index', -1)

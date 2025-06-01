@@ -75,6 +75,7 @@ class VoiceDataset(Dataset):
         return len(self.data_entries)
 
     def __getitem__(self, idx):
+        global source_speaker_id, target_speaker_id_for_conversion, target_original_audio_path, speaker_id
         entry = self.data_entries[idx]
 
         if self.is_validation:
